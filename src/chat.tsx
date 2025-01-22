@@ -24,7 +24,7 @@ const MessageListComponent = styled.div`
   padding-left: 16px;
 `;
 
-const MessageComponent = styled.div<{ prompt: boolean }>`
+const MessageComponent = styled.div`
   border: 1px solid black;
   border-radius: 10px;
   padding-left: 4px;
