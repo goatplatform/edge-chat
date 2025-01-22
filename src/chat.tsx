@@ -1,12 +1,13 @@
 // @deno-types="npm:@types/react"
-import React, { KeyboardEvent, useState } from "react";
-import { useDB, useItem, useQuery } from "@goatdb/goatdb/react";
-import { css, styled } from "styled-components";
-import { kSchemaMessage, SchemaMessage, SchemaUISettings } from "../schema.ts";
-import { dummy } from "../models/dummy.ts";
+import React, { KeyboardEvent, useState } from 'react';
+import { useDB, useItem, useQuery } from '@goatdb/goatdb/react';
+import { css, styled } from 'styled-components';
+import { kSchemaMessage, SchemaMessage, SchemaUISettings } from '../schema.ts';
+import { dummy } from '../models/dummy.ts';
+import { lmstudioRespond } from '../models/lmstudio.ts';
 
 const kLanguageModels: Record<string, (prompt: string) => Promise<string>> = {
-  "Dummy": dummy,
+  Dummy: dummy,
 };
 
 const ChatAreaComponent = styled.div`
@@ -34,7 +35,7 @@ const MessageComponent = styled.div`
   margin-right: 4px;
   margin-left: 4px;
   width: 300px;
-  font-family: "Inter", serif;
+  font-family: 'Inter', serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -61,7 +62,7 @@ const InputContainer = styled.div`
 
 const InputField = styled.input`
   width: 300px;
-  font-family: "Inter", serif;
+  font-family: 'Inter', serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -69,19 +70,19 @@ const InputField = styled.input`
 `;
 
 const InputLabel = styled.label`
-font-family: "Inter", serif;
-font-optical-sizing: auto;
-font-weight: 400;
-font-style: normal;
-margin-right: 4px;
+  font-family: 'Inter', serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  margin-right: 4px;
 `;
 
 const ModelSelect = styled.select`
-font-family: "Inter", serif;
-font-optical-sizing: auto;
-font-weight: 400;
-font-style: normal;
-margin-right: 4px;
+  font-family: 'Inter', serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  margin-right: 4px;
 `;
 
 export type MessageProps = {
@@ -90,10 +91,10 @@ export type MessageProps = {
 
 export function Message({ path }: MessageProps) {
   const item = useItem<SchemaMessage>(path);
-  const align = item.get("modelId") === undefined ? "end" : "start";
+  const align = item.get('modelId') === undefined ? 'end' : 'start';
   return (
     <MessageComponent style={{ alignSelf: align }}>
-      {item.get("text")}
+      {item.get('text')}
     </MessageComponent>
   );
 }
@@ -108,7 +109,7 @@ export function MessageList({ path }: MessageListProps) {
     schema: kSchemaMessage,
     source: path,
     sortDescriptor: ({ left, right }) =>
-      right.get("dateSent").getTime() - left.get("dateSent").getTime(),
+      right.get('dateSent').getTime() - left.get('dateSent').getTime(),
   });
   return (
     <MessageListComponent>
@@ -125,9 +126,13 @@ export type ChatAreaProps = {
 
 export function ChatArea({ userId }: ChatAreaProps) {
   const db = useDB();
-  const [model, setModel] = useState("Dummy");
-  const uiSettings = useItem<SchemaUISettings>("user", userId, "UISettings");
-  const path = uiSettings.get("selectedChat");
+  const [model, setModel] = useState('Dummy');
+  const uiSettings = useItem<SchemaUISettings>('user', userId, 'UISettings');
+  const path = uiSettings.get('selectedChat');
+  const kLanguageModels: Record<string, (prompt: string) => Promise<string>> = {
+    Dummy: dummy,
+    LocalLLM: lmstudioRespond,
+  };
   if (!path) {
     return (
       <ChatAreaComponent>
@@ -143,7 +148,7 @@ export function ChatArea({ userId }: ChatAreaProps) {
           <InputField
             id="InputField"
             onKeyPress={(event: KeyboardEvent) => {
-              if (event.key === "Enter") {
+              if (event.key === 'Enter') {
                 const input = event.target as HTMLInputElement;
                 const text = input.value;
                 if (text) {
@@ -158,7 +163,7 @@ export function ChatArea({ userId }: ChatAreaProps) {
                     });
                   });
                 }
-                input.value = "";
+                input.value = '';
               }
             }}
           />
@@ -170,9 +175,8 @@ export function ChatArea({ userId }: ChatAreaProps) {
             onInput={(event: InputEvent) => {
               setModel((event.target as HTMLSelectElement).value);
             }}
-            defaultValue="Dummy"
-          >
-            <option>Dummy</option>;
+            defaultValue="Dummy">
+            <option>Dummy</option>;<option>LocalLLM</option>
           </ModelSelect>
         </InputAreaComponent>
       </InputContainer>

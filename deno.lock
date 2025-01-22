@@ -7,11 +7,11 @@
     "jsr:@std/data-structures@^1.0.6": "1.0.6",
     "jsr:@std/encoding@1.0.6": "1.0.6",
     "jsr:@std/encoding@^1.0.5": "1.0.6",
-    "jsr:@std/fs@^1.0.9": "1.0.9",
+    "jsr:@std/fs@^1.0.9": "1.0.10",
     "jsr:@std/path@^1.0.6": "1.0.8",
     "jsr:@std/path@^1.0.8": "1.0.8",
+    "npm:@lmstudio/sdk@*": "0.4.5",
     "npm:@lmstudio/sdk@~0.4.5": "0.4.5",
-    "npm:@types/react@*": "19.0.7",
     "npm:esbuild@~0.24.2": "0.24.2",
     "npm:react-dom@19.0.0": "19.0.0_react@19.0.0",
     "npm:react@19.0.0": "19.0.0",
@@ -48,8 +48,8 @@
     "@std/encoding@1.0.6": {
       "integrity": "ca87122c196e8831737d9547acf001766618e78cd8c33920776c7f5885546069"
     },
-    "@std/fs@1.0.9": {
-      "integrity": "3eef7e3ed3d317b29432c7dcb3b20122820dbc574263f721cb0248ad91bad890",
+    "@std/fs@1.0.10": {
+      "integrity": "bf041f9d7a0a460817f0421be8946d0e06011b3433e6c83a215628de5e3c7c2c",
       "dependencies": [
         "jsr:@std/path@^1.0.8"
       ]
@@ -158,12 +158,6 @@
         "@lmstudio/lms-isomorphic",
         "chalk",
         "zod"
-      ]
-    },
-    "@types/react@19.0.7": {
-      "integrity": "sha512-MoFsEJKkAtZCrC1r6CM8U22GzhG7u2Wir8ons/aCKH6MBdD1ibV24zOSSkdZVUKqN5i396zG5VKLYZ3yaUZdLA==",
-      "dependencies": [
-        "csstype"
       ]
     },
     "@types/stylis@4.2.5": {
