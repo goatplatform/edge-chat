@@ -1,13 +1,13 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@goatdb/goatdb@^0.0.49": "0.0.49",
+    "jsr:@goatdb/goatdb@^0.0.50": "0.0.50",
     "jsr:@luca/esbuild-deno-loader@~0.11.1": "0.11.1",
     "jsr:@std/bytes@^1.0.2": "1.0.4",
     "jsr:@std/data-structures@^1.0.6": "1.0.6",
     "jsr:@std/encoding@1.0.6": "1.0.6",
     "jsr:@std/encoding@^1.0.5": "1.0.6",
-    "jsr:@std/fs@^1.0.9": "1.0.9",
+    "jsr:@std/fs@^1.0.9": "1.0.10",
     "jsr:@std/path@^1.0.6": "1.0.8",
     "jsr:@std/path@^1.0.8": "1.0.8",
     "npm:@types/react@*": "19.0.7",
@@ -22,8 +22,8 @@
     "npm:yargs@17.7.2": "17.7.2"
   },
   "jsr": {
-    "@goatdb/goatdb@0.0.49": {
-      "integrity": "f22ec88856ca99523ba7950d575fb15d9eeba0a4de88fb947d90cd3dcd1c7104",
+    "@goatdb/goatdb@0.0.50": {
+      "integrity": "57c4764c207d044d4168f50fc7e04e89563d040ce0761a49a8ae183bbf9fa5b3",
       "dependencies": [
         "jsr:@luca/esbuild-deno-loader",
         "jsr:@std/data-structures",
@@ -51,8 +51,8 @@
     "@std/encoding@1.0.6": {
       "integrity": "ca87122c196e8831737d9547acf001766618e78cd8c33920776c7f5885546069"
     },
-    "@std/fs@1.0.9": {
-      "integrity": "3eef7e3ed3d317b29432c7dcb3b20122820dbc574263f721cb0248ad91bad890",
+    "@std/fs@1.0.10": {
+      "integrity": "bf041f9d7a0a460817f0421be8946d0e06011b3433e6c83a215628de5e3c7c2c",
       "dependencies": [
         "jsr:@std/path@^1.0.8"
       ]
@@ -350,7 +350,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@goatdb/goatdb@^0.0.49",
+      "jsr:@goatdb/goatdb@^0.0.50",
       "jsr:@std/path@^1.0.8",
       "npm:@wllama/wllama@*",
       "npm:esbuild@~0.24.2",

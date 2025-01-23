@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/react"
 import React, { KeyboardEvent, useEffect, useState } from 'react';
 import { useDB, useItem, useQuery } from '@goatdb/goatdb/react';
-import { css, styled } from 'styled-components';
+import { styled } from 'styled-components';
 import { kSchemaMessage, SchemaMessage, SchemaUISettings } from '../schema.ts';
 import { dummy } from '../models/dummy.ts';
 import { wllamaGenerate } from '../models/wllama.ts';
@@ -24,74 +24,6 @@ const ChatAreaComponent = styled.div`
   flex-direction: column;
 `;
 
-const MessageListComponent = styled.div`
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 100px;
-  padding-right: 16px;
-  padding-left: 16px;
-`;
-
-const MessageComponent = styled.div`
-  border: 1px solid black;
-  border-radius: 10px;
-  padding-left: 4px;
-  box-sizing: border-box;
-  margin-top: 8px;
-  margin-bottom: 8px;
-  margin-right: 4px;
-  margin-left: 4px;
-  width: 300px;
-  font-family: 'Inter', serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-`;
-
-const InputAreaComponent = styled.div`
-  /* height: 56px; */
-  width: 100%;
-  margin-bottom: 16px;
-  margin-top: 16px;
-  /* border-bottom: 1px solid black; */
-  display: flex;
-  /* flex-direction: column; */
-  align-items: center;
-  /* padding: 8px; */
-`;
-
-const InputContainer = styled.div`
-  margin-left: auto;
-  margin-right: auto;
-  /* padding-left: 8px;
-  padding-right: 8px; */
-`;
-
-const InputField = styled.input`
-  width: 300px;
-  font-family: 'Inter', serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  margin-right: 4px;
-`;
-
-const InputLabel = styled.label`
-  font-family: 'Inter', serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  margin-right: 4px;
-`;
-
-const ModelSelect = styled.select`
-  font-family: 'Inter', serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  margin-right: 4px;
-`;
-
 const ProgressContainer = styled.div`
   margin-top: 8px;
   padding: 10px;
@@ -105,6 +37,92 @@ const ProgressBar = styled.div<{ width: number }>`
   background-color: #4caf50;
   transition: width 0.3s ease;
 `;
+const InputAreaComponent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto;
+  flex-direction: row; // Ensure everything stays in one line
+`;
+
+const ModelSelect = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-family: 'Inter', serif;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  margin-left: 4px;
+
+  &:focus {
+    border-color: #007aff;
+  }
+`;
+
+const InputLabel = styled.label`
+  font-family: 'Inter', serif;
+  font-size: 14px;
+  white-space: nowrap;
+`;
+
+const MessageListComponent = styled.div`
+  display: flex;
+  flex-direction: column; // Changed from column-reverse to column
+  padding: 20px;
+  overflow-y: auto;
+  height: calc(100vh - 160px);
+`;
+
+const MessageComponent = styled.div<{ align: 'start' | 'end' }>`
+  max-width: 80%;
+  min-width: 200px;
+  padding: 12px 16px;
+  margin: 8px;
+  border-radius: 12px;
+  font-family: 'Inter', serif;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+
+  align-self: ${(props) => props.align};
+  background-color: ${(props) =>
+    props.align === 'end' ? '#005aff' : '#f0f0f0'};
+  color: ${(props) => (props.align === 'end' ? 'white' : 'black')};
+  border: none;
+
+  /* Add shadow for depth */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+`;
+
+const InputContainer = styled.div`
+  bottom: 0;
+  left: 200px;
+  right: 0;
+  background: white;
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+`;
+
+const InputField = styled.input`
+  width: 100%;
+  max-width: 800px;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'Inter', serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #005aff;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+  }
+`;
 
 export type MessageProps = {
   path: string;
@@ -113,9 +131,13 @@ export type MessageProps = {
 export function Message({ path }: MessageProps) {
   const item = useItem<SchemaMessage>(path);
   const align = item.get('modelId') === undefined ? 'end' : 'start';
+  const text = item.get('text') || '';
+  const isTyping = text.endsWith('...');
+
   return (
-    <MessageComponent style={{ alignSelf: align }}>
-      {item.get('text')}
+    <MessageComponent align={align}>
+      {text}
+      {isTyping && <span className="typing-indicator">▋</span>}
     </MessageComponent>
   );
 }
@@ -130,7 +152,7 @@ export function MessageList({ path }: MessageListProps) {
     schema: kSchemaMessage,
     source: path,
     sortDescriptor: ({ left, right }) =>
-      right.get('dateSent').getTime() - left.get('dateSent').getTime(),
+      left.get('dateSent').getTime() - right.get('dateSent').getTime(),
   });
   return (
     <MessageListComponent>
@@ -153,12 +175,6 @@ export function ChatArea({ userId }: ChatAreaProps) {
   const path = uiSettings.get('selectedChat');
   const [loadingStatus, setLoadingStatus] = useState<string>('');
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
-  useEffect(() => {
-    console.log(
-      'Current window.Transformers status:',
-      (window as any).Transformers
-    );
-  }, []);
 
   if (!path) {
     return (
@@ -167,9 +183,46 @@ export function ChatArea({ userId }: ChatAreaProps) {
       </ChatAreaComponent>
     );
   }
+  const handleSubmit = async (text: string) => {
+    if (!text.trim()) return;
 
+    setIsLoading(true);
+    const userMsg = db.create(path, kSchemaMessage, {
+      text: text,
+      dateSent: new Date(),
+    });
+
+    const botMsg = db.create(path, kSchemaMessage, {
+      text: '...',
+      modelId: model,
+      replyTo: userMsg.path,
+      dateSent: new Date(),
+    });
+
+    try {
+      let currentResponse = '';
+      const resp = await kLanguageModels[model](text, (status, progress) => {
+        setLoadingStatus(status);
+        setLoadingProgress(progress);
+        if (status.startsWith('Generating: ')) {
+          currentResponse = status.replace('Generating: ', '');
+          botMsg.set('text', currentResponse + '...');
+        }
+      });
+
+      botMsg.set('text', resp);
+    } catch (error) {
+      console.error('Error details:', error);
+      botMsg.set('text', 'Sorry, I encountered an error. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setLoadingStatus('');
+      setLoadingProgress(0);
+    }
+  };
   return (
     <ChatAreaComponent>
+      <MessageList path={path} />
       <InputContainer>
         <InputAreaComponent>
           <InputLabel htmlFor="InputField">Type something...</InputLabel>
@@ -181,53 +234,12 @@ export function ChatArea({ userId }: ChatAreaProps) {
                 const input = event.target as HTMLInputElement;
                 const text = input.value;
                 if (text) {
-                  setIsLoading(true);
-                  const msg = db.create(path, kSchemaMessage, {
-                    text,
-                  });
-                  try {
-                    const resp = await kLanguageModels[model](
-                      text,
-                      (status, progress) => {
-                        setLoadingStatus(status);
-                        setLoadingProgress(progress);
-                      }
-                    );
-                    db.create(path, kSchemaMessage, {
-                      text: resp,
-                      modelId: model,
-                      replyTo: msg.path,
-                    });
-                  } catch (error) {
-                    console.error('Error details:', error);
-                    console.error(
-                      'Current window.Transformers status:',
-                      (window as any).Transformers
-                    );
-                    db.create(path, kSchemaMessage, {
-                      text: 'Sorry, I encountered an error. Please try again.',
-                      modelId: model,
-                      replyTo: msg.path,
-                    });
-                  } finally {
-                    setIsLoading(false);
-                    setLoadingStatus('');
-                    setLoadingProgress(0);
-                  }
                   input.value = '';
+                  await handleSubmit(text);
                 }
               }
             }}
           />
-          {isLoading && (
-            <ProgressContainer>
-              <div>{loadingStatus}</div>
-              <ProgressBar width={loadingProgress} />
-            </ProgressContainer>
-          )}
-        </InputAreaComponent>
-
-        <InputAreaComponent>
           <InputLabel htmlFor="ModelSelect">Model:</InputLabel>
           <ModelSelect
             id="ModelSelect"
@@ -238,9 +250,14 @@ export function ChatArea({ userId }: ChatAreaProps) {
             <option>Dummy</option>
             <option>TinyLlama</option>
           </ModelSelect>
+          {isLoading && (
+            <ProgressContainer>
+              <div>{loadingStatus}</div>
+              <ProgressBar width={loadingProgress} />
+            </ProgressContainer>
+          )}
         </InputAreaComponent>
       </InputContainer>
-      <MessageList path={path} />
     </ChatAreaComponent>
   );
 }

@@ -9,25 +9,6 @@ const ASSETS_CONFIG = {
 let wllamaInstance: Wllama | null = null;
 
 let modelLoaded = false;
-const MODEL_URL =
-  'https://huggingface.co/ggml-org/models/resolve/main/tinyllamas/stories15M-q4_0.gguf';
-
-// async function initializeWLlama() {
-//   if (wllamaInstance) return;
-
-//   try {
-//     console.log('Creating new Wllama instance...');
-//     wllamaInstance = new Wllama(ASSETS_CONFIG);
-
-//     console.log('Loading model from URL...');
-//     await wllamaInstance.loadModelFromUrl(MODEL_URL);
-
-//     console.log('WLlama initialized successfully');
-//   } catch (error) {
-//     console.error('WLlama initialization error:', error);
-//     throw error;
-//   }
-// }
 
 async function initializeWLlama() {
   if (modelLoaded) return;
@@ -53,7 +34,7 @@ async function initializeWLlama() {
 
     console.log('Initializing model with explicit path...');
     await wllamaInstance.loadModel([modelFile], {
-      modelPath: '/models/model.gguf', // Explicitly tell where to find the model
+      modelPath: '/models/model.gguf',
     });
 
     modelLoaded = true;
@@ -79,8 +60,9 @@ export async function wllamaGenerate(
       throw new Error('WLlama failed to initialize');
     }
 
-    onProgress('Generating response...', 50);
+    onProgress('Starting generation...', 50);
 
+    let finalResponse = '';
     const completion = await wllamaInstance.createCompletion(prompt, {
       nPredict: 50,
       sampling: {
@@ -89,7 +71,8 @@ export async function wllamaGenerate(
         top_p: 0.9,
       },
       onNewToken: (token: string, piece: string, currentText: string) => {
-        onProgress('Generating: ' + currentText, 75);
+        finalResponse = currentText;
+        onProgress('Thinking...', 75);
       },
     });
 
