@@ -1,12 +1,20 @@
 // @deno-types="npm:@types/react"
-import React, { KeyboardEvent, useState } from "react";
-import { useDB, useItem, useQuery } from "@goatdb/goatdb/react";
-import { css, styled } from "styled-components";
-import { kSchemaMessage, SchemaMessage, SchemaUISettings } from "../schema.ts";
-import { dummy } from "../models/dummy.ts";
+import React, { KeyboardEvent, useEffect, useState } from 'react';
+import { useDB, useItem, useQuery } from '@goatdb/goatdb/react';
+import { css, styled } from 'styled-components';
+import { kSchemaMessage, SchemaMessage, SchemaUISettings } from '../schema.ts';
+import { dummy } from '../models/dummy.ts';
+import { wllamaGenerate } from '../models/wllama.ts';
 
-const kLanguageModels: Record<string, (prompt: string) => Promise<string>> = {
-  "Dummy": dummy,
+const kLanguageModels: Record<
+  string,
+  (
+    prompt: string,
+    onProgress: (status: string, progress: number) => void
+  ) => Promise<string>
+> = {
+  Dummy: async (prompt) => dummy(prompt),
+  TinyLlama: wllamaGenerate,
 };
 
 const ChatAreaComponent = styled.div`
@@ -34,7 +42,7 @@ const MessageComponent = styled.div`
   margin-right: 4px;
   margin-left: 4px;
   width: 300px;
-  font-family: "Inter", serif;
+  font-family: 'Inter', serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -61,7 +69,7 @@ const InputContainer = styled.div`
 
 const InputField = styled.input`
   width: 300px;
-  font-family: "Inter", serif;
+  font-family: 'Inter', serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -69,19 +77,33 @@ const InputField = styled.input`
 `;
 
 const InputLabel = styled.label`
-font-family: "Inter", serif;
-font-optical-sizing: auto;
-font-weight: 400;
-font-style: normal;
-margin-right: 4px;
+  font-family: 'Inter', serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  margin-right: 4px;
 `;
 
 const ModelSelect = styled.select`
-font-family: "Inter", serif;
-font-optical-sizing: auto;
-font-weight: 400;
-font-style: normal;
-margin-right: 4px;
+  font-family: 'Inter', serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  margin-right: 4px;
+`;
+
+const ProgressContainer = styled.div`
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+`;
+
+const ProgressBar = styled.div<{ width: number }>`
+  height: 4px;
+  width: ${(props) => props.width}%;
+  background-color: #4caf50;
+  transition: width 0.3s ease;
 `;
 
 export type MessageProps = {
@@ -90,10 +112,10 @@ export type MessageProps = {
 
 export function Message({ path }: MessageProps) {
   const item = useItem<SchemaMessage>(path);
-  const align = item.get("modelId") === undefined ? "end" : "start";
+  const align = item.get('modelId') === undefined ? 'end' : 'start';
   return (
     <MessageComponent style={{ alignSelf: align }}>
-      {item.get("text")}
+      {item.get('text')}
     </MessageComponent>
   );
 }
@@ -108,7 +130,7 @@ export function MessageList({ path }: MessageListProps) {
     schema: kSchemaMessage,
     source: path,
     sortDescriptor: ({ left, right }) =>
-      right.get("dateSent").getTime() - left.get("dateSent").getTime(),
+      right.get('dateSent').getTime() - left.get('dateSent').getTime(),
   });
   return (
     <MessageListComponent>
@@ -125,9 +147,19 @@ export type ChatAreaProps = {
 
 export function ChatArea({ userId }: ChatAreaProps) {
   const db = useDB();
-  const [model, setModel] = useState("Dummy");
-  const uiSettings = useItem<SchemaUISettings>("user", userId, "UISettings");
-  const path = uiSettings.get("selectedChat");
+  const [model, setModel] = useState('Dummy');
+  const [isLoading, setIsLoading] = useState(false);
+  const uiSettings = useItem<SchemaUISettings>('user', userId, 'UISettings');
+  const path = uiSettings.get('selectedChat');
+  const [loadingStatus, setLoadingStatus] = useState<string>('');
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
+  useEffect(() => {
+    console.log(
+      'Current window.Transformers status:',
+      (window as any).Transformers
+    );
+  }, []);
+
   if (!path) {
     return (
       <ChatAreaComponent>
@@ -135,6 +167,7 @@ export function ChatArea({ userId }: ChatAreaProps) {
       </ChatAreaComponent>
     );
   }
+
   return (
     <ChatAreaComponent>
       <InputContainer>
@@ -142,27 +175,58 @@ export function ChatArea({ userId }: ChatAreaProps) {
           <InputLabel htmlFor="InputField">Type something...</InputLabel>
           <InputField
             id="InputField"
-            onKeyPress={(event: KeyboardEvent) => {
-              if (event.key === "Enter") {
+            disabled={isLoading}
+            onKeyPress={async (event: KeyboardEvent) => {
+              if (event.key === 'Enter') {
                 const input = event.target as HTMLInputElement;
                 const text = input.value;
                 if (text) {
+                  setIsLoading(true);
                   const msg = db.create(path, kSchemaMessage, {
                     text,
                   });
-                  kLanguageModels[model](text).then((resp) => {
+                  try {
+                    const resp = await kLanguageModels[model](
+                      text,
+                      (status, progress) => {
+                        setLoadingStatus(status);
+                        setLoadingProgress(progress);
+                      }
+                    );
                     db.create(path, kSchemaMessage, {
                       text: resp,
                       modelId: model,
                       replyTo: msg.path,
                     });
-                  });
+                  } catch (error) {
+                    console.error('Error details:', error);
+                    console.error(
+                      'Current window.Transformers status:',
+                      (window as any).Transformers
+                    );
+                    db.create(path, kSchemaMessage, {
+                      text: 'Sorry, I encountered an error. Please try again.',
+                      modelId: model,
+                      replyTo: msg.path,
+                    });
+                  } finally {
+                    setIsLoading(false);
+                    setLoadingStatus('');
+                    setLoadingProgress(0);
+                  }
+                  input.value = '';
                 }
-                input.value = "";
               }
             }}
           />
+          {isLoading && (
+            <ProgressContainer>
+              <div>{loadingStatus}</div>
+              <ProgressBar width={loadingProgress} />
+            </ProgressContainer>
+          )}
         </InputAreaComponent>
+
         <InputAreaComponent>
           <InputLabel htmlFor="ModelSelect">Model:</InputLabel>
           <ModelSelect
@@ -170,9 +234,9 @@ export function ChatArea({ userId }: ChatAreaProps) {
             onInput={(event: InputEvent) => {
               setModel((event.target as HTMLSelectElement).value);
             }}
-            defaultValue="Dummy"
-          >
-            <option>Dummy</option>;
+            defaultValue="Dummy">
+            <option>Dummy</option>
+            <option>TinyLlama</option>
           </ModelSelect>
         </InputAreaComponent>
       </InputContainer>
