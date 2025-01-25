@@ -8,12 +8,14 @@
     "clean": "rm -r server-data"
   },
   "imports": {
-    "@goatdb/goatdb": "jsr:@goatdb/goatdb@^0.0.49",
-    "@lmstudio/sdk": "npm:@lmstudio/sdk@^0.4.5",
+    "@goatdb/goatdb": "jsr:@goatdb/goatdb@^0.0.50",
     "@std/path": "jsr:@std/path@^1.0.8",
     "react": "npm:react@19.0.0",
     "react-dom": "npm:react-dom@19.0.0",
     "styled-components": "npm:styled-components@^6.1.14",
-    "yargs": "npm:yargs@17.7.2"
-  }
+    "yargs": "npm:yargs@17.7.2",
+    "@wllama/wllama": "npm:@wllama/wllama",
+    "esbuild": "npm:esbuild@^0.24.2"
+  },
+  "nodeModulesDir": true
 }
