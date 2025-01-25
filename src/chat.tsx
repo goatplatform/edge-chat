@@ -1,16 +1,17 @@
 // @deno-types="npm:@types/react"
-import React, { KeyboardEvent, useEffect, useState } from 'react';
-import { useDB, useItem, useQuery } from '@goatdb/goatdb/react';
-import { styled } from 'styled-components';
-import { kSchemaMessage, SchemaMessage, SchemaUISettings } from '../schema.ts';
-import { dummy } from '../models/dummy.ts';
-import { wllamaGenerate } from '../models/wllama.ts';
+import React, { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useDB, useItem, useQuery } from "@goatdb/goatdb/react";
+import { styled } from "styled-components";
+import { kSchemaMessage, SchemaMessage, SchemaUISettings } from "../schema.ts";
+import { dummy } from "../models/dummy.ts";
+import { wllamaGenerate } from "../models/wllama.ts";
+import { ManagedItem } from "@goatdb/goatdb";
 
 const kLanguageModels: Record<
   string,
   (
     prompt: string,
-    onProgress: (status: string, progress: number) => void
+    onProgress: (status: string, progress: number) => void,
   ) => Promise<string>
 > = {
   Dummy: async (prompt) => dummy(prompt),
@@ -75,7 +76,7 @@ const MessageListComponent = styled.div`
   height: calc(100vh - 160px);
 `;
 
-const MessageComponent = styled.div<{ align: 'start' | 'end' }>`
+const MessageComponent = styled.div<{ align: "start" | "end" }>`
   max-width: 80%;
   min-width: 200px;
   padding: 12px 16px;
@@ -88,9 +89,8 @@ const MessageComponent = styled.div<{ align: 'start' | 'end' }>`
   word-wrap: break-word;
 
   align-self: ${(props) => props.align};
-  background-color: ${(props) =>
-    props.align === 'end' ? '#005aff' : '#f0f0f0'};
-  color: ${(props) => (props.align === 'end' ? 'white' : 'black')};
+  background-color: ${(props) => props.align === "end" ? "#005aff" : "#f0f0f0"};
+  color: ${(props) => (props.align === "end" ? "white" : "black")};
   border: none;
 
   /* Add shadow for depth */
@@ -130,9 +130,9 @@ export type MessageProps = {
 
 export function Message({ path }: MessageProps) {
   const item = useItem<SchemaMessage>(path);
-  const align = item.get('modelId') === undefined ? 'end' : 'start';
-  const text = item.get('text') || '';
-  const isTyping = text.endsWith('...');
+  const align = item.get("modelId") === undefined ? "end" : "start";
+  const text = item.get("text") || "";
+  const isTyping = text.endsWith("...");
 
   return (
     <MessageComponent align={align}>
@@ -144,18 +144,19 @@ export function Message({ path }: MessageProps) {
 
 export type MessageListProps = {
   path: string;
+  ref: React.Ref<HTMLDivElement>;
 };
 
-export function MessageList({ path }: MessageListProps) {
+export function MessageList({ path, ref }: MessageListProps) {
   console.log(`Selected chat = ${path}`);
   const query = useQuery({
     schema: kSchemaMessage,
     source: path,
     sortDescriptor: ({ left, right }) =>
-      left.get('dateSent').getTime() - right.get('dateSent').getTime(),
+      left.get("dateSent").getTime() - right.get("dateSent").getTime(),
   });
   return (
-    <MessageListComponent>
+    <MessageListComponent ref={ref}>
       {query.results().map((item) => (
         <Message path={item.path} key={item.path} />
       ))}
@@ -169,12 +170,13 @@ export type ChatAreaProps = {
 
 export function ChatArea({ userId }: ChatAreaProps) {
   const db = useDB();
-  const [model, setModel] = useState('Dummy');
+  const [model, setModel] = useState("TinyLlama");
   const [isLoading, setIsLoading] = useState(false);
-  const uiSettings = useItem<SchemaUISettings>('user', userId, 'UISettings');
-  const path = uiSettings.get('selectedChat');
-  const [loadingStatus, setLoadingStatus] = useState<string>('');
+  const uiSettings = useItem<SchemaUISettings>("user", userId, "UISettings");
+  const path = uiSettings.get("selectedChat");
+  const [loadingStatus, setLoadingStatus] = useState<string>("");
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
+  const messageListRef = useRef<HTMLDivElement>(null);
 
   if (!path) {
     return (
@@ -192,37 +194,56 @@ export function ChatArea({ userId }: ChatAreaProps) {
       dateSent: new Date(),
     });
 
-    const botMsg = db.create(path, kSchemaMessage, {
-      text: '...',
-      modelId: model,
-      replyTo: userMsg.path,
-      dateSent: new Date(),
-    });
+    let botMsg: ManagedItem<SchemaMessage> | undefined;
 
     try {
-      let currentResponse = '';
+      let currentResponse = "";
       const resp = await kLanguageModels[model](text, (status, progress) => {
         setLoadingStatus(status);
         setLoadingProgress(progress);
-        if (status.startsWith('Generating: ')) {
-          currentResponse = status.replace('Generating: ', '');
-          botMsg.set('text', currentResponse + '...');
+        if (!botMsg) {
+          botMsg = db.create(path, kSchemaMessage, {
+            text: "...",
+            modelId: model,
+            replyTo: userMsg.path,
+            dateSent: new Date(),
+          });
+        }
+        if (status.startsWith("Generating: ")) {
+          currentResponse = status.replace("Generating: ", "");
+          botMsg.set("text", currentResponse + "...");
         }
       });
 
-      botMsg.set('text', resp);
+      if (!botMsg) {
+        botMsg = db.create(path, kSchemaMessage, {
+          text: "...",
+          modelId: model,
+          replyTo: userMsg.path,
+          dateSent: new Date(),
+        });
+      }
+      botMsg.set("text", resp);
     } catch (error) {
-      console.error('Error details:', error);
-      botMsg.set('text', 'Sorry, I encountered an error. Please try again.');
+      console.error("Error details:", error);
+      if (!botMsg) {
+        botMsg = db.create(path, kSchemaMessage, {
+          text: "...",
+          modelId: model,
+          replyTo: userMsg.path,
+          dateSent: new Date(),
+        });
+      }
+      botMsg.set("text", "Sorry, I encountered an error. Please try again.");
     } finally {
       setIsLoading(false);
-      setLoadingStatus('');
+      setLoadingStatus("");
       setLoadingProgress(0);
     }
   };
   return (
     <ChatAreaComponent>
-      <MessageList path={path} />
+      <MessageList path={path} ref={messageListRef} />
       <InputContainer>
         <InputAreaComponent>
           <InputLabel htmlFor="InputField">Type something...</InputLabel>
@@ -230,11 +251,11 @@ export function ChatArea({ userId }: ChatAreaProps) {
             id="InputField"
             disabled={isLoading}
             onKeyPress={async (event: KeyboardEvent) => {
-              if (event.key === 'Enter') {
+              if (event.key === "Enter") {
                 const input = event.target as HTMLInputElement;
                 const text = input.value;
                 if (text) {
-                  input.value = '';
+                  input.value = "";
                   await handleSubmit(text);
                 }
               }
@@ -246,7 +267,8 @@ export function ChatArea({ userId }: ChatAreaProps) {
             onInput={(event: InputEvent) => {
               setModel((event.target as HTMLSelectElement).value);
             }}
-            defaultValue="Dummy">
+            defaultValue="TinyLlama"
+          >
             <option>Dummy</option>
             <option>TinyLlama</option>
           </ModelSelect>
