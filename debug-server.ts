@@ -1,10 +1,8 @@
 import { startDebugServer } from '@goatdb/goatdb/server';
 import { registerSchemas } from './schema.ts';
-import { initLmStudio } from './models/lmstudio.ts';
 
 async function main(): Promise<void> {
   registerSchemas();
-  await initLmStudio();
   await startDebugServer({
     path: './server-data',
     jsPath: './scaffold/index.tsx',
