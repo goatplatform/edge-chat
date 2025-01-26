@@ -5,6 +5,10 @@ no network connection needed. It uses
 [GoatDB](https://github.com/goatplatform/goatdb) for storing chat history, and
 [wllama](https://github.com/ngxson/wllama) for running the models.
 
+Currently it runs the
+[Stories15M](https://huggingface.co/Xenova/llama2.c-stories15M) model which
+generates fun stories but can easily be adapted to specific use cases.
+
 ## Getting Started
 
 Before continuing, make sure you have Deno 2+ installed. If not, install it from
