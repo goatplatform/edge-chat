@@ -8,6 +8,8 @@ async function main(): Promise<void> {
     htmlPath: "./scaffold/index.html",
     cssPath: "./scaffold/index.css",
     assetsPath: "./assets",
+    os: "linux",
+    arch: "aar64",
   });
   Deno.exit();
 }
