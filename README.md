@@ -9,6 +9,13 @@ Currently it runs the
 [Stories15M](https://huggingface.co/Xenova/llama2.c-stories15M) model which
 generates fun stories but can easily be adapted to specific use cases.
 
+## Demo
+
+👉 Live demo is available at https://chat.goatdb.dev/
+
+The demo is deployed on a single AWS t4g.nano	machine with 2 ARM VCPUs, 0.5GB
+RAM and 8GB EBS.
+
 ## Getting Started
 
 Before continuing, make sure you have Deno 2+ installed. If not, install it from
@@ -25,6 +32,12 @@ deno task debug
 
 ```bash
 deno task clean
+```
+
+### Building the Server
+
+```bash
+deno task build
 ```
 
 ## But Why?
