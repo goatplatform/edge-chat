@@ -1,9 +1,9 @@
-import { Wllama } from '@wllama/wllama';
+import { Wllama } from "@wllama/wllama";
 
 const ASSETS_CONFIG = {
-  'single-thread/wllama.wasm': '/assets/wllama-single.wasm',
-  'multi-thread/wllama.wasm': '/assets/wllama-multi.wasm',
-  'model/default': '/assets/model.gguf',
+  "single-thread/wllama.wasm": "/assets/wllama-single.wasm",
+  "multi-thread/wllama.wasm": "/assets/wllama-multi.wasm",
+  "model/default": "/assets/model.gguf",
 };
 
 let wllamaInstance: Wllama | null = null;
@@ -14,55 +14,55 @@ async function initializeWLlama() {
   if (modelLoaded) return;
 
   try {
-    console.log('Creating new Wllama instance...');
+    console.log("Creating new Wllama instance...");
     wllamaInstance = new Wllama(ASSETS_CONFIG);
 
-    console.log('Loading model file...');
-    const modelResponse = await fetch('/models/model.gguf');
+    console.log("Loading model file...");
+    const modelResponse = await fetch("/assets/models/model.gguf");
     if (!modelResponse.ok) {
       throw new Error(
-        `Failed to load model: ${modelResponse.status} ${modelResponse.statusText}`
+        `Failed to load model: ${modelResponse.status} ${modelResponse.statusText}`,
       );
     }
 
     const modelArrayBuffer = await modelResponse.arrayBuffer();
-    console.log('Model loaded, size:', modelArrayBuffer.byteLength);
+    console.log("Model loaded, size:", modelArrayBuffer.byteLength);
 
-    const modelFile = new File([modelArrayBuffer], 'model.gguf', {
-      type: 'application/octet-stream',
+    const modelFile = new File([modelArrayBuffer], "model.gguf", {
+      type: "application/octet-stream",
     });
 
-    console.log('Initializing model with explicit path...');
+    console.log("Initializing model with explicit path...");
     await wllamaInstance.loadModel([modelFile], {
-      modelPath: '/models/model.gguf',
+      modelPath: "/assets/models/model.gguf",
     });
 
     modelLoaded = true;
-    console.log('WLlama initialized successfully');
+    console.log("WLlama initialized successfully");
   } catch (error) {
-    console.error('WLlama initialization error:', error);
+    console.error("WLlama initialization error:", error);
     throw error;
   }
 }
 
 export async function wllamaGenerate(
   prompt: string,
-  onProgress: (status: string, progress: number) => void
+  onProgress: (status: string, progress: number) => void,
 ): Promise<string> {
   try {
     if (!modelLoaded) {
-      onProgress('Loading model...', 0);
+      onProgress("Loading model...", 0);
       await initializeWLlama();
-      onProgress('Model loaded', 25);
+      onProgress("Model loaded", 25);
     }
 
     if (!wllamaInstance) {
-      throw new Error('WLlama failed to initialize');
+      throw new Error("WLlama failed to initialize");
     }
 
-    onProgress('Starting generation...', 50);
+    onProgress("Starting generation...", 50);
 
-    let finalResponse = '';
+    let finalResponse = "";
     const completion = await wllamaInstance.createCompletion(prompt, {
       nPredict: 50,
       sampling: {
@@ -72,14 +72,14 @@ export async function wllamaGenerate(
       },
       onNewToken: (token: string, piece: string, currentText: string) => {
         finalResponse = currentText;
-        onProgress('Thinking...', 75);
+        onProgress("Thinking...", 75);
       },
     });
 
-    onProgress('Done!', 100);
+    onProgress("Done!", 100);
     return completion;
   } catch (error) {
-    console.error('WLlama generation error:', error);
+    console.error("WLlama generation error:", error);
     throw error;
   }
 }

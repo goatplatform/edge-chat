@@ -1,14 +1,20 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "dom.asynciterable", "deno.ns"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "dom.asynciterable",
+      "deno.ns"
+    ],
     "jsx": "precompile"
   },
   "tasks": {
     "debug": "deno run -A debug-server.ts",
+    "build": "deno run -A build.ts",
     "clean": "rm -r server-data"
   },
   "imports": {
-    "@goatdb/goatdb": "jsr:@goatdb/goatdb@^0.0.50",
+    "@goatdb/goatdb": "jsr:@goatdb/goatdb@^0.0.79",
     "@std/path": "jsr:@std/path@^1.0.8",
     "react": "npm:react@19.0.0",
     "react-dom": "npm:react-dom@19.0.0",
@@ -16,5 +22,6 @@
     "yargs": "npm:yargs@17.7.2",
     "@wllama/wllama": "npm:@wllama/wllama",
     "esbuild": "npm:esbuild@^0.24.2"
-  }
+  },
+  "version": "0.0.1"
 }
